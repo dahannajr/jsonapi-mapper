@@ -27,6 +27,8 @@ export default class Bookshelf implements I.Mapper {
     this.serializerOptions = serializerOptions;
   }
 
+
+
   /**
    * Maps bookshelf data to a JSON-API 1.0 compliant object
    * @param data
@@ -48,16 +50,15 @@ export default class Bookshelf implements I.Mapper {
     if (utils.isModel(data)) {
       let model: Model = <Model> data;
 
-      // Add list of valid attributes
-      template.attributes = utils.getDataAttributesList(model);
-
       // Provide support for withRelated option TODO WARNING DEPRECATED. To be deleted on next major version
       if (bookshelfOptions.includeRelations) bookshelfOptions.relations = bookshelfOptions.includeRelations;
 
       // Add relations (only if permitted)
       if (bookshelfOptions.relations) {
-        _.forOwn(model.relations, function (relModel: Model, relName: string): void {
+//        _.forOwn(model.relations, function (relModel: Model, relName: string): void {
+          recursiveRelations(model, template, self.baseUrl, type);
 
+/*
           // Skip if the relation is not permitted
           if (bookshelfOptions.relations === false ||
             (typeCheck('[String]', bookshelfOptions.relations) &&
@@ -65,6 +66,9 @@ export default class Bookshelf implements I.Mapper {
 
             return;
           }
+
+          // Add list of valid attributes
+          template.attributes = utils.getDataAttributesList(model);
 
           // Add relation to attribute list
           template.attributes.push(relName);
@@ -82,15 +86,15 @@ export default class Bookshelf implements I.Mapper {
               template[relName][nestedRelName] = utils.buildRelation(self.baseUrl, relName, nestedRelName, utils.getDataAttributesList(nestedRelModel), true);
           });
         });
-      }
+*/      }
 
       // Serializer process for a Collection
     } else if (utils.isCollection(data)) {
 
       let model: Model = (<Collection> data).first();
 
-      if (!_.isUndefined(model)) {
 
+      if (!_.isUndefined(model)) {
         // Add list of valid attributes
         template.attributes = utils.getDataAttributesList(model);
 
@@ -98,7 +102,8 @@ export default class Bookshelf implements I.Mapper {
         if (bookshelfOptions.includeRelations) bookshelfOptions.relations = bookshelfOptions.includeRelations;
 
         data.forEach((model) => {
-          _.forOwn(model.relations, function (relModel: Model, relName: string): void {
+          recursiveRelations(model, template, self.baseUrl, type);
+/*          _.forOwn(model.relations, function (relModel: Model, relName: string): void {
 
               // Skip if the relation is not permitted
               if (bookshelfOptions.relations === false ||
@@ -107,6 +112,8 @@ export default class Bookshelf implements I.Mapper {
 
                 return;
               }
+
+
 
               // Avoid duplicates
               if (!_.include(template.attributes, relName)) {
@@ -140,6 +147,7 @@ export default class Bookshelf implements I.Mapper {
               });
 
           });
+*/
         });
 
       }
@@ -151,5 +159,25 @@ export default class Bookshelf implements I.Mapper {
     // Return the data in JSON API format
     let json : any = utils.toJSON(data);
     return new Serializer(type, json, template);
+  }
+}
+
+function recursiveRelations(data: any, template: any, baseUrl: string, type: string): any {
+  if (data.relations) {
+    _.forOwn(data.relations, function (relModel: Model, relName: string): void {
+      // Add list of valid attributes
+      template.attributes = utils.getDataAttributesList(data);
+
+      // Add relation to attribute list
+      template.attributes.push(relName);
+
+      // Add relation serialization
+      template[relName] = utils.buildRelation(baseUrl, type, relName, utils.getDataAttributesList(relModel), true);
+
+      return recursiveRelations(relModel, template[relName], baseUrl, type);
+    });
+  }
+  else {
+    return template;
   }
 }
