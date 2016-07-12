@@ -159,7 +159,7 @@ export default class Bookshelf implements I.Mapper {
     // Return the data in JSON API format
     let json : any = utils.toJSON(data);
     return new Serializer(type, json, template);
-  }
+    }
 }
 
 function recursiveRelations(data: any, template: any, baseUrl: string, type: string): any {
